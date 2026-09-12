@@ -8,8 +8,8 @@
 #include <algorithm>
 #include <stdexcept>
 
-#include "tools.h" // OpenFileDialog/SaveFileDialog (dialogs.cpp), and the
-                    // eyedropper/launcher/clipboard helpers (system_utils.cpp)
+#include "win32helpers.h" // OpenFileDialog/SaveFileDialog (dialogs.cpp), and the
+                           // eyedropper/launcher/clipboard helpers (system_utils.cpp)
 
 #define COLOR_REF(hex) GetColor((hex << 8) | 0xFF)
 
@@ -39,6 +39,39 @@ int UIMeasureText(const char* text, int fontSize) {
 // goes through our custom font instead of raylib's default one.
 #define DrawText UIDrawText
 #define MeasureText UIMeasureText
+
+// Tries a list of common system-font paths and returns the first one that
+// loads successfully, so the app gets a smooth TTF on Windows, macOS, and
+// Linux alike -- without needing to ship a font file. Falls back to
+// raylib's built-in (blocky) default font only if none of them exist.
+Font LoadUIFont(int baseSize) {
+    static const char* candidates[] = {
+        // Windows
+        "C:\\Windows\\Fonts\\segoeui.ttf",
+        "C:\\Windows\\Fonts\\arial.ttf",
+        // macOS
+        "/System/Library/Fonts/SFNSText.ttf",
+        "/System/Library/Fonts/Supplemental/Arial.ttf",
+        "/Library/Fonts/Arial.ttf",
+        // Linux (common distro font packages)
+        "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf",
+        "/usr/share/fonts/truetype/liberation/LiberationSans-Regular.ttf",
+        "/usr/share/fonts/truetype/noto/NotoSans-Regular.ttf",
+        "/usr/share/fonts/TTF/DejaVuSans.ttf",
+    };
+
+    for (const char* path : candidates) {
+        Font f = LoadFontEx(path, baseSize, NULL, 0);
+        if (f.texture.id != 0) {
+            SetTextureFilter(f.texture, TEXTURE_FILTER_BILINEAR);
+            return f;
+        }
+    }
+
+    // Nothing on disk matched -- fall back to raylib's built-in font rather
+    // than leaving the app without any text rendering at all.
+    return GetFontDefault();
+}
 
 enum AppMode {
     MODE_WORD_COUNTER = 0,
@@ -273,14 +306,10 @@ int main() {
     // biggest text (the calculator/timer displays) scales up on large
     // windows -- raylib rasterizes the glyphs once at this size and scales
     // down cleanly, but scaling up past it would look soft.
-    g_uiFont = LoadFontEx("C:\\Windows\\Fonts\\segoeui.ttf", 96, NULL, 0);
-    if (g_uiFont.texture.id == 0) {
-        // Font file not found (e.g. running on a non-Windows box, or a
-        // stripped-down Windows install) -- fall back rather than crash.
-        g_uiFont = GetFontDefault();
-    } else {
-        SetTextureFilter(g_uiFont.texture, TEXTURE_FILTER_BILINEAR);
-    }
+    // LoadUIFont tries several common system-font locations across Windows,
+    // macOS, and Linux, and only falls back to raylib's blocky built-in
+    // font if none of them are present on this machine.
+    g_uiFont = LoadUIFont(96);
 
     AppMode mode = MODE_WORD_COUNTER;
 
