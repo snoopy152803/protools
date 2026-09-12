@@ -31,11 +31,32 @@ You'll need:
 - [raylib](https://www.raylib.com/) headers and library (`raylib.h` under `include/`, plus `libraylib.a` / `raylib.lib`)
 - The Windows resource compiler (`windres`, or MSVC's `rc.exe`) to build `icon.rc`
 
-### MinGW-w64 g++ command
+### Building with `make`
+
+A `Makefile` is included and works with g++ or clang++ (MinGW-w64):
 
 ```sh
-windres icon.rc -O icon.o
-g++ *.cpp icon.o -o app.exe -Iinclude -Llib -lraylib -lopengl32 -lgdi32 -lwinmm -lcomdlg32 -mwindows
+make                 # builds toolbox.exe with g++ (the default)
+make CXX=clang++     # or build with clang instead, no editing required
+make clean           # remove build artifacts
+```
+
+It compiles `icon.rc` via `windres`, compiles each `.cpp` file, and links against the libraries
+listed above. To point it at a different raylib install location, override `CXXFLAGS`/`LDLIBS`:
+
+```sh
+make CXXFLAGS="-std=c++17 -O2 -IC:/raylib/include" LDLIBS="-LC:/raylib/lib -lraylib -lopengl32 -lgdi32 -lwinmm -lshell32 -lcomdlg32"
+```
+
+### Building manually (no `make`)
+
+```sh
+windres icon.rc -O coff -o icon.res
+
+g++ -std=c++17 -O2 -I include \
+    main.cpp dialogs.cpp system_utils.cpp icon.res \
+    -o toolbox.exe \
+    -lraylib -lopengl32 -lgdi32 -lwinmm -lshell32 -lcomdlg32
 ```
 
 Notes on linking:
@@ -53,14 +74,16 @@ Add all four `.cpp` files to your project, link against `raylib.lib`, `shell32.l
 
 ## Fonts
 
-The app loads Segoe UI directly from `C:\Windows\Fonts\segoeui.ttf` at startup for crisp,
-anti-aliased text (raylib's built-in default font is a small bitmap font that looks blocky at
-larger sizes). If that file can't be found — e.g. running on a non-Windows machine — it falls
-back to raylib's default font automatically.
+The app loads a system TTF at startup for crisp, anti-aliased text (raylib's built-in default
+font is a small bitmap font that looks blocky at larger sizes). `LoadUIFont()` in `main.cpp`
+tries a list of common font locations in order — Segoe UI / Arial on Windows, San Francisco /
+Arial on macOS, DejaVu Sans / Liberation Sans / Noto Sans on common Linux distros — and uses
+the first one it finds. If none of them exist on the machine it's running on, it falls back to
+raylib's built-in default font automatically, so the app still runs (just with blockier text).
 
-To use a different font, change the path passed to `LoadFontEx` near the top of `main.cpp`.
-To ship a font instead of relying on the OS having it, place a `.ttf` next to the `.exe` and
-point the path at that instead.
+To add another fallback location or reorder the search, edit the `candidates` list in
+`LoadUIFont()`. To ship a font instead of relying on the OS having one, place a `.ttf` next to
+the executable and add its relative path to the front of that list.
 
 ## Notes & known limitations
 
