@@ -8,15 +8,8 @@
 #include <algorithm>
 #include <stdexcept>
 
-// dialogs.cpp
-std::string OpenFileDialog();
-std::string SaveFileDialog();
-
-// system_utils.cpp
-bool GetPixelColorAtCursor(int& outR, int& outG, int& outB);
-bool IsLeftMouseButtonDownGlobal();
-bool LaunchApplication(const std::string& target);
-bool CopyTextToClipboard(const std::string& text);
+#include "tools.h" // OpenFileDialog/SaveFileDialog (dialogs.cpp), and the
+                    // eyedropper/launcher/clipboard helpers (system_utils.cpp)
 
 #define COLOR_REF(hex) GetColor((hex << 8) | 0xFF)
 
