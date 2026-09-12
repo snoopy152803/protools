@@ -31,15 +31,11 @@ You'll need:
 - [raylib](https://www.raylib.com/) headers and library (`raylib.h` under `include/`, plus `libraylib.a` / `raylib.lib`)
 - The Windows resource compiler (`windres`, or MSVC's `rc.exe`) to build `icon.rc`
 
-### MinGW-w64 (g++) example
+### MinGW-w64 g++ command
 
 ```sh
-windres icon.rc -O coff -o icon.res
-
-g++ -std=c++17 -O2 -I include \
-    main.cpp dialogs.cpp system_utils.cpp icon.res \
-    -o toolbox.exe \
-    -lraylib -lopengl32 -lgdi32 -lwinmm -lshell32 -lcomdlg32
+windres icon.rc -O icon.o
+g++ *.cpp icon.o -o app.exe -Iinclude -Llib -lraylib -lopengl32 -lgdi32 -lwinmm -lcomdlg32 -mwindows
 ```
 
 Notes on linking:
