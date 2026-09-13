@@ -15,7 +15,7 @@
 CXX      ?= g++
 CXXFLAGS ?= -std=c++17 -O2 -Wall -Iinclude
 DEPFLAGS  = -MMD -MP
-LDLIBS   ?= -lraylib -lopengl32 -lgdi32 -lwinmm -lshell32 -lcomdlg32
+LDLIBS   ?= -lraylib -lopengl32 -lgdi32 -lwinmm -lshell32 -lcomdlg32 -lwinhttp
 
 WINDRES  ?= windres
 
