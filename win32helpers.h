@@ -1,5 +1,5 @@
 #pragma once
-// tools.h
+// win32helpers.h
 //
 // Shared declarations for the small Win32 helper functions implemented in
 // dialogs.cpp and system_utils.cpp. main.cpp includes this instead of
@@ -45,5 +45,12 @@ bool IsLeftMouseButtonDownGlobal();
 bool LaunchApplication(const std::string& target);
 
 // Copies plain text to the system clipboard. Returns true on success.
-// Used by the Colour Picker's "Copy Hex" button.
+// Used by the Colour Picker's "Copy Hex" / "Copy RGB" buttons.
 bool CopyTextToClipboard(const std::string& text);
+
+// Looks up the current UTC offset (in hours, e.g. 8.0 or -5.5) for an IANA
+// timezone name (e.g. "Asia/Shanghai") via a live network request to
+// worldtimeapi.org. Returns false on any network failure -- callers should
+// fall back to a static approximate offset when that happens. Powers the
+// World Clock's lookup for cities that aren't one of the built-in presets.
+bool FetchUtcOffsetForTimezone(const std::string& ianaTz, double& outOffsetHours);
