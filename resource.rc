@@ -1,0 +1,4 @@
+#include "resource.h"
+
+// This binds your .ico file to the resource ID
+IDI_APP_ICON ICON "appicon.ico"

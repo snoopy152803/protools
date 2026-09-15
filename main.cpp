@@ -290,6 +290,17 @@ std::string TrimCopy(const std::string& s) {
     return s.substr(start, end - start + 1);
 }
 
+// Returns true on the frame a backspace "delete" should happen: the initial
+// press, and then repeatedly while held. raylib's IsKeyPressedRepeat() taps
+// directly into GLFW's OS-level key-repeat events (the same mechanism a
+// native text field uses), which is more reliable than reimplementing
+// press-and-hold timing by hand with IsKeyDown + a manual timer.
+// Requires raylib >= 4.5 -- see the README if this fails to compile on an
+// older raylib install.
+bool BackspaceRepeat() {
+    return IsKeyPressed(KEY_BACKSPACE) || IsKeyPressedRepeat(KEY_BACKSPACE);
+}
+
 // A reusable single-line numeric text field: handles digit/'.'/backspace
 // input when 'active' is true. Returns true if the value changed this frame.
 bool NumericFieldInput(std::string& text, bool active, size_t maxLen = 24) {
@@ -301,7 +312,7 @@ bool NumericFieldInput(std::string& text, bool active, size_t maxLen = 24) {
         if (valid && text.length() < maxLen) { text += (char)key; changed = true; }
         key = GetCharPressed();
     }
-    if (IsKeyPressed(KEY_BACKSPACE) && !text.empty()) { text.pop_back(); changed = true; }
+    if (BackspaceRepeat() && !text.empty()) { text.pop_back(); changed = true; }
     return changed;
 }
 
@@ -465,6 +476,21 @@ int main() {
     const float baseHeight = 660.0f;
     InitWindow((int)baseWidth, (int)baseHeight, "C++ Pro Toolbox");
     SetTargetFPS(60);
+
+    // GLFW (which raylib uses under the hood on Windows) sets its own
+    // default window icon at window-creation time -- this OVERRIDES the
+    // exe's embedded resource icon (from icon.rc) in the taskbar and
+    // Alt+Tab while the app is actually running, even though the resource
+    // icon is what Explorer shows for the file itself when it's not
+    // running. SetWindowIcon() is what actually fixes the running-window
+    // taskbar icon. raylib's LoadImage can't read .ico files directly
+    // (no ICO container support in stb_image), so this loads a plain PNG
+    // instead -- keep appicon.png in sync with appicon.ico if you change it.
+    Image windowIconImg = LoadImage("appicon.png");
+    if (windowIconImg.data != NULL) {
+        SetWindowIcon(windowIconImg);
+        UnloadImage(windowIconImg);
+    }
 
     g_darkPalette = MakeDarkPalette();
     g_lightPalette = MakeLightPalette();
@@ -719,7 +745,7 @@ int main() {
                     if (IsKeyPressed(KEY_SPACE) && !ctrlPressed && textInput.length() < 3000) {
                         if (isAllSelected) { textInput = ""; isAllSelected = false; }
                     }
-                    if (IsKeyPressed(KEY_BACKSPACE)) {
+                    if (BackspaceRepeat()) {
                         if (isAllSelected) { textInput = ""; isAllSelected = false; }
                         else if (!textInput.empty()) textInput.pop_back();
                     }
@@ -894,7 +920,7 @@ int main() {
                         if (valid && calcExpr.length() < 64) { calcExpr += (char)key; calcError = false; }
                         key = GetCharPressed();
                     }
-                    if (IsKeyPressed(KEY_BACKSPACE) && !calcExpr.empty()) { calcExpr.pop_back(); calcError = false; }
+                    if (BackspaceRepeat() && !calcExpr.empty()) { calcExpr.pop_back(); calcError = false; }
                     if (IsKeyPressed(KEY_ENTER) || IsKeyPressed(KEY_KP_ENTER)) {
                         double result = 0.0;
                         if (!calcExpr.empty() && EvaluateExpression(calcExpr, result)) { calcDisplay = FormatNumber(result); calcError = false; }
@@ -1004,7 +1030,7 @@ int main() {
                             if (key >= '0' && key <= '9' && timerMinutesInput.length() < 4) timerMinutesInput += (char)key;
                             key = GetCharPressed();
                         }
-                        if (IsKeyPressed(KEY_BACKSPACE) && !timerMinutesInput.empty()) timerMinutesInput.pop_back();
+                        if (BackspaceRepeat() && !timerMinutesInput.empty()) timerMinutesInput.pop_back();
                     }
 
                     bool hoverSet = CheckCollisionPointRec(mousePos, setBtn);
@@ -1133,7 +1159,7 @@ int main() {
                             if (key >= '0' && key <= '9' && alarmHourInput.length() < 2) alarmHourInput += (char)key;
                             key = GetCharPressed();
                         }
-                        if (IsKeyPressed(KEY_BACKSPACE) && !alarmHourInput.empty()) alarmHourInput.pop_back();
+                        if (BackspaceRepeat() && !alarmHourInput.empty()) alarmHourInput.pop_back();
                     }
                     if (alarmMinuteFieldActive) {
                         int key = GetCharPressed();
@@ -1141,7 +1167,7 @@ int main() {
                             if (key >= '0' && key <= '9' && alarmMinuteInput.length() < 2) alarmMinuteInput += (char)key;
                             key = GetCharPressed();
                         }
-                        if (IsKeyPressed(KEY_BACKSPACE) && !alarmMinuteInput.empty()) alarmMinuteInput.pop_back();
+                        if (BackspaceRepeat() && !alarmMinuteInput.empty()) alarmMinuteInput.pop_back();
                     }
 
                     float applyY = panelTop + 60 * scale + 20 * scale;
@@ -1153,8 +1179,10 @@ int main() {
                     if (IsMouseButtonPressed(MOUSE_BUTTON_LEFT) && hoverApply) {
                         int h = alarmHourInput.empty() ? 0 : atoi(alarmHourInput.c_str());
                         int m = alarmMinuteInput.empty() ? 0 : atoi(alarmMinuteInput.c_str());
-                        if (h < 0) h = 0; if (h > 23) h = 23;
-                        if (m < 0) m = 0; if (m > 59) m = 59;
+                        if (h < 0) { h = 0; }
+                        if (h > 23) { h = 23; }
+                        if (m < 0) { m = 0; }
+                        if (m > 59) { m = 59; }
                         alarmHour = h; alarmMinute = m;
                         char buf[4];
                         snprintf(buf, sizeof(buf), "%02d", h); alarmHourInput = buf;
@@ -1264,7 +1292,7 @@ int main() {
                             if (key >= 32 && key <= 125 && worldClockSearch.length() < 60) worldClockSearch += (char)key;
                             key = GetCharPressed();
                         }
-                        if (IsKeyPressed(KEY_BACKSPACE) && !worldClockSearch.empty()) worldClockSearch.pop_back();
+                        if (BackspaceRepeat() && !worldClockSearch.empty()) worldClockSearch.pop_back();
                         if (IsKeyPressed(KEY_ENTER) || IsKeyPressed(KEY_KP_ENTER)) submit = true;
                     }
 
@@ -1563,13 +1591,19 @@ int main() {
                         if (key >= 32 && key <= 125 && launcherQuery.length() < 200) launcherQuery += (char)key;
                         key = GetCharPressed();
                     }
-                    if (IsKeyPressed(KEY_BACKSPACE) && !launcherQuery.empty()) launcherQuery.pop_back();
+                    if (BackspaceRepeat() && !launcherQuery.empty()) launcherQuery.pop_back();
                     if (IsKeyPressed(KEY_ENTER) || IsKeyPressed(KEY_KP_ENTER)) {
                         if (!launcherQuery.empty()) {
                             std::string target = ResolveLaunchTarget(launcherQuery);
                             bool ok = LaunchApplication(target);
                             launcherFeedbackOk = ok;
                             launcherFeedback = ok ? ("Launched: " + target) : ("Could not launch: " + target);
+                            if (!ok) {
+                                ShowWarningDialog("App Launcher",
+                                    "Couldn't launch \"" + target + "\".\n\n"
+                                    "It may not be installed, or it isn't on your PATH. "
+                                    "Try typing a full path instead, or check the spelling.");
+                            }
                         }
                     }
                 }
@@ -1601,6 +1635,11 @@ int main() {
                         bool ok = LaunchApplication(alias.target);
                         launcherFeedbackOk = ok;
                         launcherFeedback = ok ? (std::string("Launched: ") + alias.target) : (std::string("Could not launch: ") + alias.target);
+                        if (!ok) {
+                            ShowWarningDialog("App Launcher",
+                                std::string("Couldn't launch \"") + alias.target + "\".\n\n"
+                                "It doesn't appear to be installed on this machine.");
+                        }
                     }
 
                     chipX += chipW + chipGap;

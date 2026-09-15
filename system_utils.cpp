@@ -69,6 +69,16 @@ bool CopyTextToClipboard(const std::string& text) {
 }
 
 // ---------------------------------------------------------------------------
+// Native "something went wrong" dialog -- used when the App Launcher can't
+// find/start whatever the user asked for (not installed, not on PATH, typo,
+// etc.), so the failure is impossible to miss rather than just a small line
+// of red text in the app.
+// ---------------------------------------------------------------------------
+void ShowWarningDialog(const std::string& title, const std::string& message) {
+    MessageBoxA(NULL, message.c_str(), title.c_str(), MB_OK | MB_ICONWARNING);
+}
+
+// ---------------------------------------------------------------------------
 // World Clock support: live UTC-offset lookup for cities that aren't one of
 // the app's hardcoded presets.
 //

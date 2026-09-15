@@ -54,3 +54,8 @@ bool CopyTextToClipboard(const std::string& text);
 // fall back to a static approximate offset when that happens. Powers the
 // World Clock's lookup for cities that aren't one of the built-in presets.
 bool FetchUtcOffsetForTimezone(const std::string& ianaTz, double& outOffsetHours);
+
+// Shows a native Windows warning dialog (a blocking MessageBox) with the
+// given title and message. Used by the App Launcher when a launch target
+// can't be found/started, so the failure can't be missed.
+void ShowWarningDialog(const std::string& title, const std::string& message);

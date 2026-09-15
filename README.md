@@ -37,7 +37,8 @@ This project targets **Windows** (it uses `windows.h`, `commdlg.h`, `ShellExecut
 You'll need:
 
 - A C++17-capable compiler (MinGW-w64/g++, clang++, or MSVC)
-- [raylib](https://www.raylib.com/) headers and library (`raylib.h` under `include/`, plus `libraylib.a` / `raylib.lib`)
+- [raylib](https://www.raylib.com/) **4.5 or newer** (uses `IsKeyPressedRepeat()` for
+  press-and-hold backspace in text fields; older raylib versions don't have this function)
 - The Windows resource compiler (`windres`, or MSVC's `rc.exe`) to build `icon.rc`
 
 ### Building with `make`
@@ -64,9 +65,12 @@ windres icon.rc -O coff -o icon.res
 
 g++ -std=c++17 -O2 -I include \
     main.cpp dialogs.cpp system_utils.cpp icon.res \
-    -o toolbox.exe \
+    -o toolbox.exe -mwindows \
     -lraylib -lopengl32 -lgdi32 -lwinmm -lshell32 -lcomdlg32 -lwinhttp
 ```
+
+`-mwindows` builds a GUI-subsystem executable rather than a console one, so no black console
+window appears behind the app when you launch `toolbox.exe`.
 
 Notes on linking:
 
@@ -81,6 +85,26 @@ Notes on linking:
 Add all four `.cpp` files to your project, link against `raylib.lib`, `shell32.lib`,
 `gdi32.lib`, `user32.lib`, `comdlg32.lib`, and `winhttp.lib`, and compile `icon.rc` as a resource
 file (Visual Studio does this automatically if it's added to the project).
+
+## App icon (taskbar / Explorer)
+
+`icon.rc` embeds `appicon.ico` as the executable's resource icon (`id ICON "appicon.ico"`), and
+the Makefile compiles + links it automatically. Two things worth knowing if the wrong icon shows
+up in the taskbar:
+
+1. **The `.ico` file itself must contain proper square sizes.** Windows expects standard square
+   resolutions (16×16, 32×32, 48×48, 256×256, etc.) bundled inside the one `.ico` file. A
+   single non-square frame (e.g. 32×25) is commonly rejected outright, and Windows silently
+   falls back to a generic placeholder icon instead of erroring. If a custom icon isn't
+   appearing, check `appicon.ico`'s actual embedded sizes — if it's not square, regenerate it
+   with multiple resolutions (most icon editors / ImageMagick / Pillow's `Image.save(...,
+   format="ICO", sizes=[(16,16),(32,32),(48,48),(256,256)])` can do this).
+2. **Windows caches icons per file path.** After rebuilding with a fixed icon, Explorer/taskbar
+   can keep showing a stale cached icon for that same `.exe` path. If the icon still looks wrong
+   after confirming the `.ico` is valid, either rename/move the `.exe` once, or clear the icon
+   cache (signing out and back in is usually enough; a forced clear is deleting
+   `%localappdata%\IconCache.db` and `%localappdata%\Microsoft\Windows\Explorer\iconcache_*.db`,
+   then restarting `explorer.exe`).
 
 ## Theme & fonts
 
@@ -121,7 +145,9 @@ A theme toggle and a font-switch button both live at the bottom of the sidebar.
 - **App Launcher** resolves typed queries against a small built-in alias list (Word, Excel,
   PowerPoint, Notepad, Calculator, Paint, Explorer, Chrome, Command Prompt); anything not in
   that list is passed straight to `ShellExecute`, so a full path or a PATH-resolvable exe name
-  also works.
+  also works. If launching fails (not installed, not on PATH, typo, etc.), a native Windows
+  warning dialog pops up in addition to the inline red status text, so a failed launch can't be
+  missed.
 - **Colour Picker** samples the screen at the OS level (`GetPixel`/`GetCursorPos`) and detects
   the confirming click via `GetAsyncKeyState`, so picking works even while hovering another
   application window — not just inside the app itself. The R/G/B sliders are disabled while
