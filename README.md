@@ -28,7 +28,10 @@ switchable UI font:
 | `dialogs.cpp`      | Native Windows Open/Save file dialogs                                   |
 | `system_utils.cpp` | Win32 helpers: eyedropper pixel sampling, global mouse state, process launching, clipboard, live timezone lookup |
 | `icon.rc`          | Windows resource script embedding the app icon                          |
-| `appicon.ico`      | App icon                                                                 |
+| `appicon.ico`      | App icon  
+| `launcher.exe`     | Main executable file
+| `unavailable.exe`  | If toolbox.exe isn't available, this script creates a Windows dialog box that shows it's not available
+| `toolbox.exe`      | Compiled main.cpp - launcher for protools application
 
 ## Building
 
