@@ -28,7 +28,7 @@ switchable UI font:
 | `dialogs.cpp`      | Native Windows Open/Save file dialogs                                   |
 | `system_utils.cpp` | Win32 helpers: eyedropper pixel sampling, global mouse state, process launching, clipboard, live timezone lookup |
 | `icon.rc`          | Windows resource script embedding the app icon                          |
-| `appicon.ico`      | App icon  
+| `appicon.png`      | App icon as png for raylib - raylib does not support .ico files
 | `launcher.exe`     | Main executable file
 | `unavailable.exe`  | If toolbox.exe isn't available, this script creates a Windows dialog box that shows it's not available
 | `toolbox.exe`      | Compiled main.cpp - launcher for protools application
@@ -44,6 +44,24 @@ You'll need:
   press-and-hold backspace in text fields; older raylib versions don't have this function)
 - The Windows resource compiler (`windres`, or MSVC's `rc.exe`) to build `icon.rc`
 
+### Commands that Makefile will run for g++ (MSYS2 (64))
+Commands for `make`:
+```sh
+g++ -std=c++17 -O2 -Wall -Iinclude -MMD -MP -c main.cpp -o main.o
+g++ -std=c++17 -O2 -Wall -Iinclude -MMD -MP -c dialogs.cpp -o dialogs.o
+g++ -std=c++17 -O2 -Wall -Iinclude -MMD -MP -c system_utils.cpp -o system_utils.o
+windres icon.rc -O coff -o icon.res
+g++ -mwindows main.o dialogs.o system_utils.o icon.res -o toolbox.exe -lraylib -lopengl32 -lgdi32 -lwinmm -lshell32 -lcomdlg32 -lwinhttp
+g++ -std=c++17 -O2 -Wall -Iinclude -MMD -MP -c launcher.cpp -o launcher.o
+g++ -mwindows launcher.o icon.res -o launcher.exe -lshell32
+g++ -std=c++17 -O2 -Wall -Iinclude -MMD -MP -c unavailable.cpp -o unavailable.o
+g++ -mwindows unavailable.o icon.res -o unavailable.exe -luser32
+```
+Commands for `make clean`
+```sh
+rm -f main.o dialogs.o system_utils.o launcher.o unavailable.o main.d dialogs.d system_utils.d launcher.d unavailable.d icon.res \
+      toolbox.exe launcher.exe unavailable.exe # deleting all temporary files and only leaving essential files for the `make` command
+```
 ### Building with `make`
 
 A `Makefile` is included and works with g++ or clang++ (MinGW-w64):
